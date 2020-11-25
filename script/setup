@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# script/setup: Tells Docker to setup the project by configuring YAML config files
+# & getting and building Docker images.
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+./script/bootstrap
+
+echo "===> Getting passwords from LastPass if available"
+# [ -f ./bin/lastpassify ] && [ -f ./config/database.example.yml ] && ./bin/lastpassify
+bundle exec lastpassify config/database.example.yml config/database.yml
+
+echo "===> Building Docker container"
+docker-compose build
+
+echo "===> Spinning up Docker container"
+docker-compose up
+
+echo "==> All done!"

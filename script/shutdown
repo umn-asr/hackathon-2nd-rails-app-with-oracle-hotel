@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# script/shutdown: Tells Docker to shut down the project
+
+echo "===> Shutting down Docker container"
+docker-compose down
