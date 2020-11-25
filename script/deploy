@@ -3,6 +3,11 @@
 docker context create remote \
   --docker host=ssh://swadm@asr-drone-dev-app-01.oit.umn.edu
 
+# seems like docker holds onto these contexts across projects.
+# starting this in a new repo, I expected to have to create the
+# context again but it was already there.
+# may want to rm context on shutdown, and add on startup
+
 # tried to `docker-compose up` like below
 # various errors worked through
 # - until `Error while fetching server API version`
@@ -32,3 +37,30 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml --context remote
   - or if there's a setting I need to change on the server
 
 # Trying to learn more about the Dockerfile in order to troubleshoot better
+
+# After further research, it seems like the ideal is to keep
+# the same Dockerfile, and use ENV variables if you need to
+# But I'm still unsure why build is failing
+
+# After running the `up` command, now the error is:
+
+E: Unable to locate package alien
+E: Package 'build-essential' has no installation candidate
+E: Unable to locate package freetds-dev
+E: Unable to locate package libaio-dev
+E: Unable to locate package libaio1
+
+# Hangs for a long time at:
+
+docker.api.build._set_auth_headers: Looking for auth config
+docker.auth._resolve_authconfig_credstore: Looking for auth entry for 'https://asr-docker-local.artifactory.umn.edu'
+docker.api.build._set_auth_headers: Sending auth config ('asr-docker-local.artifactory.umn.edu', 'https://asr-docker-local.artifactory.umn.edu')
+
+# Research says this could be b/c it's passing a large file, not
+# sure what that would be.
+
+# It does eventually complete, however.
+
+# I added another `apt-get update` before `BUILD_PACKAGES`
+# hoping that would help it find the packages, but now I
+# have both previous errors
