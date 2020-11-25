@@ -1,3 +1,17 @@
+So far the commands that seem to be on the right track
+for a deploy script are:
+
+# Create remote context (will want to add a rm line on `script/shutdown`)
+docker context create remote \
+  --docker host=ssh://swadm@asr-drone-dev-app-01.oit.umn.edu
+
+# build container on remote host
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml --context remote up -d
+
+-----
+However there were a lot of other discoveries that I've captured in the below notes.
+
+Notes:
 # create remote context
 
 docker context create remote \
@@ -31,15 +45,9 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml --context remote
       Err:3 http://security.debian.org/debian-security buster/updates InRelease
         Could not connect to debian.map.fastlydns.net:80 (199.232.30.132), connection timed out Could not connect to security.debian.org:80 (151.101.128.204). - connect (113: No route to host) Could not connect to security.debian.org:80 (151.101.64.204), connection timed out Could not connect to security.debian.org:80 (151.101.192.204), connection timed out Could not connect to security.debian.org:80 (151.101.0.204), connection timed out
 
-# Unsure if:
-  - Dockerfile should be changed
-  - or if prod needs its own Dockerfile like docker-compose
-  - or if there's a setting I need to change on the server
-
-# Trying to learn more about the Dockerfile in order to troubleshoot better
-
 # After further research, it seems like the ideal is to keep
 # the same Dockerfile, and use ENV variables if you need to
+
 # But I'm still unsure why build is failing
 
 # After running the `up` command, now the error is:
@@ -61,6 +69,32 @@ docker.api.build._set_auth_headers: Sending auth config ('asr-docker-local.artif
 
 # It does eventually complete, however.
 
-# I added another `apt-get update` before `BUILD_PACKAGES`
-# hoping that would help it find the packages, but now I
-# have both previous errors
+-----
+
+The issue does appear to be a networking one.
+
+I found you can run the command `docker info`.
+Running that on both my local machine and the drone dev server,
+one difference stands out.
+
+On the drone server, at the very bottom, there is this warning:
+
+```
+WARNING: bridge-nf-call-iptables is disabled
+WARNING: bridge-nf-call-ip6tables is disabled
+```
+
+I found online you can edit your `/etc/sysctl.conf` to say:
+
+```
+bridge-nf-call-iptables is disabled = 1
+bridge-nf-call-ip6tables is disabled = 1
+```
+
+And that might fix it. However it doesn't seem like it's a
+secure way, this file is read-only, and it doesn't seem like
+something that would be easy to troubleshoot if this changes
+in the future.
+
+I'm wondering if there's a change to the `ipset` role we could
+make for this playbook.
